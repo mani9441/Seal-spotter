@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seal Detector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        overflow-x: hidden;
+        background: #f3f4f6;
+      }
+      .gradient-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      }
+      .main-section {
+        background: #e5e7eb;
+      }
+      .card {
+        background: #ffffff;
+        border-radius: 1rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      .card-container {
+        background: #ffffff;
+        backdrop-filter: blur(10px);
+      }
+      .loading-spinner {
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid #ffffff;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .modal-overlay {
+        background-color: rgba(0, 0, 0, 0.6);
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s, opacity 0.3s linear;
+      }
+      .modal-overlay.open {
+        visibility: visible;
+        opacity: 1;
+      }
+      /* New CSS for animation */
+      .upload-area-container {
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      }
+      .upload-area-container.shrink {
+        transform: scale(0.8) translateY(-20px);
+        opacity: 0;
+        height: 0;
+        margin-bottom: 0;
+      }
+      .preview-section {
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        transform: translateY(20px);
+        opacity: 0;
+        height: 0;
+        overflow: hidden;
+      }
+      .preview-section.visible {
+        transform: translateY(0);
+        opacity: 1;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body class="flex flex-col min-h-screen">
+    <header
+      class="gradient-header text-white py-8 px-4 text-center rounded-b-[40px] shadow-lg"
+    >
+      <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight">
+        Seal Detector
+      </h1>
+      <p class="mt-3 text-sm md:text-lg opacity-80">
+        Upload your container image for AI-powered detection
+      </p>
+    </header>
+
+    <main
+      class="flex-grow p-6 md:p-12 flex flex-col items-center justify-center"
+    >
+      <div class="card p-6 md:p-12 w-full max-w-2xl text-center">
+        <div class="mb-8 upload-area-container" id="upload-area-container">
+          <label
+            for="file-upload"
+            class="block text-gray-700 text-lg font-bold mb-3"
+          >
+            Upload your PNG file
+          </label>
+          <div
+            class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 p-8 md:p-12 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors duration-300"
+            id="drop-area"
+          >
+            <input
+              type="file"
+              id="file-upload"
+              class="hidden"
+              accept="image/png , image/jpeg"
+            />
+            <p class="text-gray-500 mb-2">Drag & drop your file here, or</p>
+            <button
+              id="select-file-button"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105"
+            >
+              Browse Files
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-8 preview-section" id="preview-section">
+          <h2 class="text-gray-700 text-lg font-bold mb-3">
+            Selected Image Preview
+          </h2>
+          <div
+            class="w-full h-48 md:h-64 bg-gray-200 rounded-xl flex items-center justify-center overflow-hidden border-2 border-gray-300"
+          >
+            <img
+              id="input-image-preview"
+              src=""
+              alt="Input Image Preview"
+              class="max-w-full max-h-full object-contain hidden"
+            />
+            <p id="input-placeholder" class="text-gray-500">
+              Image will appear here
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <label
+            for="model-select"
+            class="block text-gray-700 text-lg font-bold mb-3"
+          >
+            Select a Detection Model
+          </label>
+          <select
+            id="model-select"
+            name="model"
+            class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+          >
+            <option value="ppyoloe-localised">PPYOLOE-L (Localised)</option>
+            <option value="ppyoloe-normal">PPYOLOE (Normal)</option>
+            <option value="retinanet">RetinaNet</option>
+            <option value="rtmdet">RTMDet</option>
+            <option value="mask-rcnn">Mask RCNN</option>
+          </select>
+        </div>
+
+        <div class="flex justify-center">
+          <button
+            id="process-button"
+            disabled
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            <span id="button-text">Find Seals</span>
+            <div id="loading-spinner" class="loading-spinner hidden ml-3"></div>
+          </button>
+        </div>
+
+        <div
+          id="status-message"
+          class="text-center text-sm md:text-base text-gray-600 mt-4 h-6"
+        ></div>
+      </div>
+    </main>
+
+    <div
+      id="results-modal"
+      class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4"
+    >
+      <div
+        class="bg-white rounded-3xl p-8 shadow-2xl w-full max-w-md transform transition-transform duration-300 scale-95 opacity-0"
+      >
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Detection Results</h2>
+        <div id="results-content" class="text-gray-600 text-center"></div>
+        <div class="flex justify-center mt-6">
+          <button
+            id="close-modal-button"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Get all the necessary DOM elements
+      const dropArea = document.getElementById("drop-area");
+      const fileInput = document.getElementById("file-upload");
+      const selectFileButton = document.getElementById("select-file-button");
+      const modelSelector = document.getElementById("model-select"); // New selector for the model dropdown
+      const inputImagePreview = document.getElementById("input-image-preview");
+      const inputPlaceholder = document.getElementById("input-placeholder");
+      const processButton = document.getElementById("process-button");
+      const buttonText = document.getElementById("button-text");
+      const loadingSpinner = document.getElementById("loading-spinner");
+      const statusMessage = document.getElementById("status-message");
+      const resultsModal = document.getElementById("results-modal");
+      const resultsContent = document.getElementById("results-content");
+      const closeModalButton = document.getElementById("close-modal-button");
+      const uploadAreaContainer = document.getElementById(
+        "upload-area-container"
+      );
+      const previewSection = document.getElementById("preview-section");
+
+      // Attach event listeners for file input and drag-and-drop
+      selectFileButton.addEventListener("click", () => fileInput.click());
+
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropArea.addEventListener(eventName, highlight, false);
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+      });
+
+      dropArea.addEventListener("drop", handleDrop, false);
+      fileInput.addEventListener("change", (e) => handleFiles(e.target.files));
+
+      // Event listener for the main processing button
+      processButton.addEventListener("click", () => processImage());
+
+      // Event listener for the modal close button
+      closeModalButton.addEventListener("click", () => {
+        resultsModal.classList.remove("open");
+        document.body.style.overflow = "auto";
+      });
+
+      // Helper functions
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      function highlight() {
+        dropArea.classList.add("border-blue-500", "bg-blue-50");
+      }
+
+      function unhighlight() {
+        dropArea.classList.remove("border-blue-500", "bg-blue-50");
+      }
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+      }
+
+      function handleFiles(files) {
+        const file = files[0];
+        if (file && (file.type === "image/png" || file.type === "image/jpeg")) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            inputImagePreview.src = e.target.result;
+            inputImagePreview.classList.remove("hidden");
+            inputPlaceholder.classList.add("hidden");
+
+            // Animate the upload box and show the preview section
+            uploadAreaContainer.classList.add("shrink");
+            previewSection.classList.add("visible");
+          };
+          reader.readAsDataURL(file);
+          statusMessage.textContent = "File selected. Ready to find seals!";
+          processButton.disabled = false;
+          processButton.classList.add("bg-blue-600", "hover:bg-blue-700");
+          processButton.classList.remove("bg-gray-400");
+        } else {
+          statusMessage.textContent = "Please upload a valid PNG file.";
+          inputImagePreview.classList.add("hidden");
+          inputPlaceholder.classList.remove("hidden");
+          processButton.disabled = true;
+          processButton.classList.remove("bg-blue-600", "hover:bg-blue-700");
+          processButton.classList.add("bg-gray-400");
+        }
+      }
+
+      // Function to process and store image data
+      async function processImage() {
+        const file = fileInput.files[0];
+        const selectedModel = modelSelector.value; // Get the selected model's value
+
+        if (!file) {
+          statusMessage.textContent = "Please select a file first.";
+          return;
+        }
+
+        // Show loading state
+        buttonText.textContent = "Processing...";
+        loadingSpinner.classList.remove("hidden");
+        processButton.disabled = true;
+
+        try {
+          // Prepare form data
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("model", selectedModel); // Append the selected model to the form data
+
+          // Call backend
+          const response = await fetch("/predict", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Server error: " + response.statusText);
+          }
+
+          const data = await response.json();
+
+          let messageText = "";
+
+          if (data.success) {
+            // Fetch the image from the server's URL
+            const imageResponse = await fetch(data.image_url);
+            const imageBlob = await imageResponse.blob();
+
+            // Build the status message here, as it's needed for localStorage
+            if (data.predictions.length > 0) {
+              const preds = data.predictions
+                .map(
+                  (p) =>
+                    `${p.label} (${(p.confidence * 100).toFixed(
+                      1
+                    )}%) at [${p.box.map((v) => v.toFixed(0)).join(", ")}]`
+                )
+                .join("; ");
+              messageText = "Detections: " + preds;
+            } else {
+              messageText = "No objects detected.";
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+              const base64Image = event.target.result;
+              localStorage.setItem("processedImage", base64Image);
+              localStorage.setItem("statusMessage", messageText);
+
+              // Navigate to the Flask route for the results page
+              window.location.href = "/results";
+            };
+            reader.readAsDataURL(imageBlob);
+          } else {
+            messageText = "Error: " + data.error;
+            localStorage.setItem("statusMessage", messageText);
+            window.location.href = "/results";
+          }
+        } catch (error) {
+          console.error("Error processing image:", error);
+          localStorage.setItem(
+            "statusMessage",
+            "Error during processing. Please try again."
+          );
+          window.location.href = "/results";
+        } finally {
+          // Re-enable the button and hide spinner for better UX if the redirect fails
+          processButton.disabled = false;
+          buttonText.textContent = "Find Seals";
+          loadingSpinner.classList.add("hidden");
+        }
+      }
+    </script>
+  </body>
+</html>
