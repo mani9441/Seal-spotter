@@ -34,28 +34,28 @@ def results():
 MODELS = {
     'retinanet': {
         'type': 'mmdet',
-        'config': 'model/models/retinanet/atss_custom.py',
-        'weights': 'model/models/retinanet/epoch_100.pth'
+        'config': 'configs/retinanet/atss_custom.py',
+        'weights': 'models/retinanet/epoch_100.pth'
     },
     'rtmdet': {
         'type': 'mmdet',
-        'config': 'model/models/rtmdet/test.py',
-        'weights': 'model/models/rtmdet/epoch_100.pth'
+        'config': 'configs/rtmdet/test.py',
+        'weights': 'models/rtmdet/epoch_100.pth'
     },
     'ppyoloe-localised': {
         'type': 'mmdet',
-        'config': 'model/models/ppyoloe_localised/ppyoloeloc.py',
-        'weights': 'model/models/ppyoloe_localised/epoch_100.pth'
+        'config': 'configs/ppyoloe_localised/ppyoloeloc.py',
+        'weights': 'models/ppyoloe_localised/epoch_100.pth'
     },
     'ppyoloe-normal': {
         'type': 'mmdet',
-        'config': 'model/models/ppyoloe_normal/ppyolonormal.py',
-        'weights': 'model/models/ppyoloe_normal/epoch_100.pth'
+        'config': 'configs/ppyoloe_normal/ppyolonormal.py',
+        'weights': 'models/ppyoloe_normal/epoch_100.pth'
     },
     'mask-rcnn': {
         'type': 'detectron2',
-        'config': 'model/models/maskRCNN/config.yaml',
-        'weights': 'model/models/maskRCNN/model_final.pth'
+        'config': 'configs/maskRCNN/config.yaml',
+        'weights': 'models/maskRCNN/model_final.pth'
     }
 }
 
