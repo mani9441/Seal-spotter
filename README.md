@@ -140,7 +140,7 @@ See [LICENSE](LICENSE) for details.
 
 ---
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 - [MMDetection](https://github.com/open-mmlab/mmdetection)
 - [Detectron2](https://github.com/facebookresearch/detectron2)
